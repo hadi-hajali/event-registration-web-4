@@ -5,6 +5,10 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
   const toggleCategoryStatus = async (category: any) => {
     try {
       const response = await fetch(
@@ -39,6 +43,42 @@ export default function CategoriesPage() {
     }
   };
 
+  const createCategory = async () => {
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch(
+        "http://localhost:5031/api/categories",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name,
+            description,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const newCategory = await response.json();
+
+      setCategories((prev) => [...prev, newCategory]);
+
+      setName("");
+      setDescription("");
+
+      setSuccessMessage("Category created successfully");
+    } catch {
+      setError("Failed to create category");
+    }
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -70,25 +110,53 @@ export default function CategoriesPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 text-center text-red-500">
-        {error}
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Categories
-          </h1>
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+          Categories
+        </h1>
 
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">
-            + New Category
-          </button>
+        <div className="border rounded-lg p-4 mb-6 bg-gray-50">
+          <h2 className="text-xl font-semibold mb-4">
+            Create Category
+          </h2>
+
+          <div className="grid gap-4">
+            <input
+              type="text"
+              placeholder="Category Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border p-3 rounded"
+            />
+
+            <textarea
+              placeholder="Description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="border p-3 rounded"
+            />
+
+            <button
+              onClick={createCategory}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+            >
+              Create Category
+            </button>
+
+            {successMessage && (
+              <div className="text-green-600 font-medium">
+                {successMessage}
+              </div>
+            )}
+
+            {error && (
+              <div className="text-red-600 font-medium">
+                {error}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="overflow-x-auto">
