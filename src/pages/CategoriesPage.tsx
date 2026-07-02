@@ -8,6 +8,7 @@ export default function CategoriesPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
 
   const toggleCategoryStatus = async (category: any) => {
     try {
@@ -79,6 +80,61 @@ export default function CategoriesPage() {
     }
   };
 
+  const startEdit = (category: any) => {
+    setEditingCategory(category);
+    setName(category.name);
+    setDescription(category.description || "");
+    setError("");
+    setSuccessMessage("");
+  };
+
+  const updateCategory = async () => {
+    if (!editingCategory) return;
+
+    setError("");
+    setSuccessMessage("");
+
+    try {
+      const response = await fetch(
+        `http://localhost:5031/api/categories/${editingCategory.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: editingCategory.id,
+            name,
+            description,
+            isActive: editingCategory.isActive,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+      const updatedCategory = await response.json();
+
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === updatedCategory.id
+            ? updatedCategory
+            : c
+        )
+      );
+
+      setEditingCategory(null);
+      setName("");
+      setDescription("");
+
+      setSuccessMessage("Category updated successfully");
+    } catch {
+      setError("Failed to update category");
+    }
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -119,7 +175,9 @@ export default function CategoriesPage() {
 
         <div className="border rounded-lg p-4 mb-6 bg-gray-50">
           <h2 className="text-xl font-semibold mb-4">
-            Create Category
+            {editingCategory
+              ? "Edit Category"
+              : "Create Category"}
           </h2>
 
           <div className="grid gap-4">
@@ -139,10 +197,16 @@ export default function CategoriesPage() {
             />
 
             <button
-              onClick={createCategory}
+              onClick={
+                editingCategory
+                  ? updateCategory
+                  : createCategory
+              }
               className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
             >
-              Create Category
+              {editingCategory
+                ? "Update Category"
+                : "Create Category"}
             </button>
 
             {successMessage && (
@@ -191,7 +255,10 @@ export default function CategoriesPage() {
 
                   <td className="border p-3">
                     <div className="flex justify-center gap-2">
-                      <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">
+                      <button
+                        onClick={() => startEdit(cat)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                      >
                         Edit
                       </button>
 
