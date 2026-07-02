@@ -5,6 +5,40 @@ export default function CategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const toggleCategoryStatus = async (category: any) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5031/api/categories/${category.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            isActive: !category.isActive,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update category");
+      }
+
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === category.id
+            ? { ...c, isActive: !c.isActive }
+            : c
+        )
+      );
+    } catch {
+      alert("Failed to update category");
+    }
+  };
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -75,15 +109,16 @@ export default function CategoriesPage() {
                   <td className="border p-3">{cat.description}</td>
 
                   <td className="border p-3 text-center">
-                    {cat.isActive ? (
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
-                        Inactive
-                      </span>
-                    )}
+                    <button
+                      onClick={() => toggleCategoryStatus(cat)}
+                      className={`px-4 py-1 rounded-full text-sm font-medium transition ${
+                        cat.isActive
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {cat.isActive ? "Active" : "Inactive"}
+                    </button>
                   </td>
 
                   <td className="border p-3">
