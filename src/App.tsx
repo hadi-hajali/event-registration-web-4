@@ -1,11 +1,40 @@
+import { useEffect, useState } from 'react';
+import AppLayout from './components/layout/AppLayout';
+import CategoriesPage from './pages/CategoriesPage';
+import DashboardPage from './pages/DashboardPage';
+import EventsPage from './pages/EventsPage';
+import ParticipantsPage from './pages/ParticipantsPage';
+
 function App() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-100">
-      <h1 className="text-5xl font-bold text-blue-600">
-        Event Registration System
-      </h1>
-    </div>
-  )
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const renderPage = () => {
+    switch (currentPath) {
+      case '/categories':
+        return <CategoriesPage />;
+      case '/events':
+        return <EventsPage />;
+      case '/participants':
+        return <ParticipantsPage />;
+      case '/dashboard':
+      default:
+        return <DashboardPage />;
+    }
+  };
+
+  return <AppLayout>{renderPage()}</AppLayout>;
 }
 
-export default App
+export default App;
