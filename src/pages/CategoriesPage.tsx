@@ -1,16 +1,44 @@
 import { useEffect, useState } from "react";
+import type { Category } from "../types/category";
 
 export default function CategoriesPage() {
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [editingCategory, setEditingCategory] = useState<any | null>(null);
 
-  const toggleCategoryStatus = async (category: any) => {
+  const [editingCategory, setEditingCategory] =
+    useState<Category | null>(null);
+
+  // ================= FETCH CATEGORIES =================
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5031/api/categories"
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+
+        const data: Category[] = await response.json();
+        setCategories(data);
+      } catch {
+        setError("Error loading categories");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // ================= TOGGLE STATUS =================
+  const toggleCategoryStatus = async (category: Category) => {
     try {
       const response = await fetch(
         `http://localhost:5031/api/categories/${category.id}`,
@@ -28,9 +56,7 @@ export default function CategoriesPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to update category");
-      }
+      if (!response.ok) throw new Error();
 
       setCategories((prev) =>
         prev.map((c) =>
@@ -44,6 +70,7 @@ export default function CategoriesPage() {
     }
   };
 
+  // ================= CREATE =================
   const createCategory = async () => {
     setError("");
     setSuccessMessage("");
@@ -63,11 +90,9 @@ export default function CategoriesPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error();
-      }
+      if (!response.ok) throw new Error();
 
-      const newCategory = await response.json();
+      const newCategory: Category = await response.json();
 
       setCategories((prev) => [...prev, newCategory]);
 
@@ -80,7 +105,8 @@ export default function CategoriesPage() {
     }
   };
 
-  const startEdit = (category: any) => {
+  // ================= EDIT =================
+  const startEdit = (category: Category) => {
     setEditingCategory(category);
     setName(category.name);
     setDescription(category.description || "");
@@ -90,9 +116,6 @@ export default function CategoriesPage() {
 
   const updateCategory = async () => {
     if (!editingCategory) return;
-
-    setError("");
-    setSuccessMessage("");
 
     try {
       const response = await fetch(
@@ -111,18 +134,12 @@ export default function CategoriesPage() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error();
-      }
+      if (!response.ok) throw new Error();
 
-      const updatedCategory = await response.json();
+      const updated: Category = await response.json();
 
       setCategories((prev) =>
-        prev.map((c) =>
-          c.id === updatedCategory.id
-            ? updatedCategory
-            : c
-        )
+        prev.map((c) => (c.id === updated.id ? updated : c))
       );
 
       setEditingCategory(null);
@@ -135,143 +152,96 @@ export default function CategoriesPage() {
     }
   };
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch(
-          "http://localhost:5031/api/categories"
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch categories");
-        }
-
-        const data = await response.json();
-        setCategories(data);
-      } catch {
-        setError("Error loading categories");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
+  // ================= UI =================
   if (loading) {
-    return (
-      <div className="p-6 text-center">
-        Loading categories...
-      </div>
-    );
+    return <div className="p-6 text-center">Loading categories...</div>;
   }
 
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Categories
-        </h1>
+        <h1 className="text-3xl font-bold mb-6">Categories</h1>
 
-        <div className="border rounded-lg p-4 mb-6 bg-gray-50">
+        {/* FORM */}
+        <div className="border p-4 mb-6 bg-gray-50">
           <h2 className="text-xl font-semibold mb-4">
-            {editingCategory
-              ? "Edit Category"
-              : "Create Category"}
+            {editingCategory ? "Edit Category" : "Create Category"}
           </h2>
 
           <div className="grid gap-4">
             <input
-              type="text"
+              className="border p-3 rounded"
               placeholder="Category Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="border p-3 rounded"
             />
 
             <textarea
+              className="border p-3 rounded"
               placeholder="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="border p-3 rounded"
             />
 
             <button
               onClick={
-                editingCategory
-                  ? updateCategory
-                  : createCategory
+                editingCategory ? updateCategory : createCategory
               }
-              className="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded"
+              className="bg-blue-600 text-white py-2 rounded"
             >
-              {editingCategory
-                ? "Update Category"
-                : "Create Category"}
+              {editingCategory ? "Update" : "Create"}
             </button>
 
             {successMessage && (
-              <div className="text-green-600 font-medium">
-                {successMessage}
-              </div>
+              <p className="text-green-600">{successMessage}</p>
             )}
 
-            {error && (
-              <div className="text-red-600 font-medium">
-                {error}
-              </div>
-            )}
+            {error && <p className="text-red-600">{error}</p>}
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full border border-gray-300 rounded-lg overflow-hidden">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border p-3 text-left">Name</th>
-                <th className="border p-3 text-left">Description</th>
-                <th className="border p-3 text-center">Active</th>
-                <th className="border p-3 text-center">Actions</th>
+        {/* TABLE */}
+        <table className="w-full border">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border p-3">Name</th>
+              <th className="border p-3">Description</th>
+              <th className="border p-3">Status</th>
+              <th className="border p-3">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {categories.map((cat) => (
+              <tr key={cat.id} className="text-center">
+                <td className="border p-3">{cat.name}</td>
+                <td className="border p-3">{cat.description}</td>
+
+                <td className="border p-3">
+                  <button
+                    onClick={() => toggleCategoryStatus(cat)}
+                    className={`px-3 py-1 rounded ${
+                      cat.isActive
+                        ? "bg-green-500 text-white"
+                        : "bg-red-500 text-white"
+                    }`}
+                  >
+                    {cat.isActive ? "Active" : "Inactive"}
+                  </button>
+                </td>
+
+                <td className="border p-3">
+                  <button
+                    onClick={() => startEdit(cat)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
+                  >
+                    Edit
+                  </button>
+                </td>
               </tr>
-            </thead>
-
-            <tbody>
-              {categories.map((cat) => (
-                <tr key={cat.id} className="hover:bg-gray-50">
-                  <td className="border p-3">{cat.name}</td>
-                  <td className="border p-3">{cat.description}</td>
-
-                  <td className="border p-3 text-center">
-                    <button
-                      onClick={() => toggleCategoryStatus(cat)}
-                      className={`px-4 py-1 rounded-full text-sm font-medium transition ${
-                        cat.isActive
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {cat.isActive ? "Active" : "Inactive"}
-                    </button>
-                  </td>
-
-                  <td className="border p-3">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => startEdit(cat)}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                      >
-                        Edit
-                      </button>
-
-                      <button className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
