@@ -1,10 +1,10 @@
-export interface NavigationItem {
+export type NavigationItem = {
   label: string;
   path: string;
-}
+};
 
 export const navigationItems: NavigationItem[] = [
-  { label: 'Dashboard', path: '/dashboard' },
+  { label: 'Dashboard', path: '/' },
   { label: 'Categories', path: '/categories' },
   { label: 'Events', path: '/events' },
   { label: 'Participants', path: '/participants' },
