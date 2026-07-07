@@ -34,7 +34,7 @@ function App() {
     }
   };
 
-  return <AppLayout>{renderPage()}</AppLayout>;
+  return <AppLayout currentPath={currentPath}>{renderPage()}</AppLayout>;
 }
 
 export default App;
