@@ -11,12 +11,23 @@ export type GetEventsParams = {
   pageSize?: number;
 };
 
+type EventsResponse = {
+  items: EventListItem[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+};
+
 export const getEvents = async (
   params: GetEventsParams
 ): Promise<EventListItem[]> => {
-  const res = await axios.get<EventListItem[]>(BASE_URL, {
-    params,
-  });
+  const res = await axios.get<EventsResponse>(
+    BASE_URL,
+    {
+      params,
+    }
+  );
 
-  return res.data;
+  return res.data.items;
 };
