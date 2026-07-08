@@ -1,125 +1,317 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
+
+﻿import { useEffect, useState } from "react";
 import type { Event } from "../types/event";
+import { getEventById } from "../api/services/events";
+import {
+  getEventRegistrations,
+  createRegistration,
+  cancelRegistration,
+} from "../api/services/registrations";
+import {
+  RegistrationStatus,
+  type Registration,
+} from "../types/registration";
+import RegistrationTable from "../components/registrations/RegistrationTable";
+import RegistrationForm from "../components/registrations/RegistrationForm";
+import CancelRegistrationDialog from "../components/registrations/CancelRegistrationDialog";
+import { getErrorMessage } from "../utils/apiError";
+import { formatDate, formatDateTime } from "../utils/formatDate";
 
-export default function EventDetailsPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+interface EventDetailsPageProps {
+  eventId: number;
+}
 
+const PAGE_SIZE = 10;
+
+export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
+  // Event
   const [event, setEvent] = useState<Event | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [eventLoading, setEventLoading] = useState(true);
+  const [eventError, setEventError] = useState<string | null>(null);
 
+  // Registrations list
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [registrationsLoading, setRegistrationsLoading] = useState(true);
+  const [registrationsError, setRegistrationsError] = useState<string | null>(
+    null
+  );
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "">(
+    ""
+  );
+
+  // Register form
+  const [registering, setRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  // Cancel dialog
+  const [cancelTargetId, setCancelTargetId] = useState<number | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+
+  async function loadEvent() {
+    setEventLoading(true);
+    setEventError(null);
+    try {
+      const data = await getEventById(eventId);
+      setEvent(data);
+    } catch (err) {
+      setEventError(getErrorMessage(err));
+    } finally {
+      setEventLoading(false);
+    }
+  }
+
+  async function loadRegistrations() {
+    setRegistrationsLoading(true);
+    setRegistrationsError(null);
+    try {
+      const data = await getEventRegistrations(eventId, {
+        page,
+        pageSize: PAGE_SIZE,
+        search: search || undefined,
+        status: statusFilter === "" ? undefined : statusFilter,
+      });
+      setRegistrations(data.items);
+      setTotalPages(Math.max(data.totalPages, 1));
+    } catch (err) {
+      setRegistrationsError(getErrorMessage(err));
+    } finally {
+      setRegistrationsLoading(false);
+    }
+  }
+
+  // Load the event once when this component instance mounts.
+  // (A new instance is created per eventId via the `key` prop in App.tsx,
+  // so there's no need to manually reset state here when eventId changes.)
+  //
+  // loadEvent() sets loading/error state before its first `await`. Calling
+  // it directly at the top of the effect body is flagged as a synchronous
+  // setState (same class of issue as the registrations effect below), so we
+  // defer it the same way: via setTimeout, which runs after the current
+  // render/commit has finished.
   useEffect(() => {
-    const fetchEvent = async () => {
-      try {
-        const res = await axios.get<Event>(
-          `http://localhost:5031/api/events/${id}`
-        );
+    const timeoutId = window.setTimeout(() => {
+      loadEvent();
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-        setEvent(res.data);
-      } catch (err: unknown) {
-        console.error(err);
-        setError("Failed to load event");
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Reload the registrations list when filters/page change (debounced for search).
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      loadRegistrations();
+    }, 300);
+    return () => window.clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search, statusFilter]);
 
-    fetchEvent();
-  }, [id]);
+  async function handleRegister(participantId: number, notes: string) {
+    setRegistering(true);
+    setRegisterError(null);
+    try {
+      await createRegistration(eventId, {
+        participantId,
+        notes: notes || undefined,
+      });
+      setPage(1);
+      await Promise.all([loadEvent(), loadRegistrations()]);
+    } catch (err) {
+      setRegisterError(getErrorMessage(err));
+    } finally {
+      setRegistering(false);
+    }
+  }
 
-  if (loading)
-    return <div className="p-6">Loading event...</div>;
+  function handleCancelClick(registrationId: number) {
+    setCancelError(null);
+    setCancelTargetId(registrationId);
+  }
 
-  if (error)
-    return <div className="p-6 text-red-500">{error}</div>;
+  function handleCloseCancelDialog() {
+    if (cancelling) return;
+    setCancelTargetId(null);
+    setCancelError(null);
+  }
 
-  if (!event)
-    return <div className="p-6">No event found</div>;
+  async function handleConfirmCancel() {
+    if (cancelTargetId === null) return;
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await cancelRegistration(cancelTargetId);
+      setCancelTargetId(null);
+      await Promise.all([loadEvent(), loadRegistrations()]);
+    } catch (err) {
+      setCancelError(getErrorMessage(err));
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  const eventHasStarted = event ? event.eventStatus !== "Upcoming" : false;
+  const cancelDisabledReason = eventHasStarted
+    ? "Cannot cancel a registration after the event has started."
+    : null;
+
+  if (eventLoading) {
+    return <div className="py-10 text-center text-gray-500">Loading event...</div>;
+  }
+
+  if (eventError || !event) {
+    return (
+      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+        {eventError ?? "Event not found."}
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      {/* TITLE */}
-      <h1 className="text-3xl font-bold mb-4">
-        {event.name}
-      </h1>
-
-      {/* INFO CARD */}
-      <div className="border rounded p-4 shadow space-y-3">
-        <p>
-          <span className="font-semibold">Description:</span>{" "}
-          {event.description}
-        </p>
-
-        <p>
-          <span className="font-semibold">Location:</span>{" "}
-          {event.location}
-        </p>
-
-        <p>
-          <span className="font-semibold">Category:</span>{" "}
-          {event.categoryName}
-        </p>
-
-        <p>
-          <span className="font-semibold">Date:</span>{" "}
-          {new Date(event.startAt).toLocaleString()} →{" "}
-          {new Date(event.endAt).toLocaleString()}
-        </p>
-
-        {/* STATUS */}
-        <p>
-          <span className="font-semibold">Status:</span>{" "}
+    <div className="space-y-6">
+      {/* Event summary */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{event.name}</h1>
+            <p className="mt-1 text-sm text-gray-500">
+              {event.categoryName} • {event.location}
+            </p>
+          </div>
           <span
-            className={`px-2 py-1 rounded text-white text-sm ${
-              event.isActive ? "bg-green-500" : "bg-red-500"
+            className={`inline-flex h-fit rounded-full px-3 py-1 text-xs font-medium ${
+              event.eventStatus === "Upcoming"
+                ? "bg-blue-100 text-blue-700"
+                : event.eventStatus === "Ongoing"
+                ? "bg-green-100 text-green-700"
+                : "bg-gray-200 text-gray-700"
             }`}
           >
-            {event.isActive ? "Active" : "Inactive"}
+            {event.eventStatus}
           </span>
-        </p>
+        </div>
 
-        {/* CAPACITY */}
-        <p>
-          <span className="font-semibold">Capacity:</span>{" "}
-          {event.capacity}
-        </p>
-
-        <p>
-          <span className="font-semibold">
-            Available Seats:
-          </span>{" "}
-          {event.availableSeats}
-        </p>
-
-        <p>
-          <span className="font-semibold">
-            Active Registrations:
-          </span>{" "}
-          {event.activeRegistrationCount}
-        </p>
+        <dl className="mt-4 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+          <div>
+            <dt className="text-gray-500">Starts</dt>
+            <dd className="font-medium">{formatDateTime(event.startAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-gray-500">Ends</dt>
+            <dd className="font-medium">{formatDateTime(event.endAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-gray-500">Registration Deadline</dt>
+            <dd className="font-medium">
+              {event.registrationDeadline
+  ? formatDate(event.registrationDeadline)
+  : "-"}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-gray-500">Seats</dt>
+            <dd className="font-medium">
+              {event.activeRegistrationCount} / {event.capacity}{" "}
+              <span className="text-gray-400">
+                ({event.availableSeats} available)
+              </span>
+            </dd>
+          </div>
+        </dl>
       </div>
 
-      {/* ACTIONS */}
-      <div className="flex gap-3 mt-5">
-        <button
-          onClick={() =>
-            navigate(`/events/${id}/registrations`)
-          }
-          className="bg-blue-600 text-white px-4 py-2 rounded"
-        >
-          View Registrations
-        </button>
-
-        <button
-          onClick={() => navigate("/events")}
-          className="border px-4 py-2 rounded"
-        >
-          Back
-        </button>
+      {/* Register a participant */}
+      <div>
+        <RegistrationForm loading={registering} onSubmit={handleRegister} />
+        {registerError && (
+          <p className="mt-2 text-sm text-red-600">{registerError}</p>
+        )}
       </div>
+
+      {/* Registrations list */}
+      <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">Registrations</h2>
+
+          <div className="flex flex-wrap gap-3">
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+              placeholder="Search by participant name or email..."
+              className="rounded border border-gray-300 px-3 py-2 text-sm"
+            />
+
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setPage(1);
+                setStatusFilter(
+                  e.target.value === ""
+                    ? ""
+                    : (Number(e.target.value) as RegistrationStatus)
+                );
+              }}
+              className="rounded border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="">All statuses</option>
+              <option value={RegistrationStatus.Active}>Active</option>
+              <option value={RegistrationStatus.Cancelled}>Cancelled</option>
+            </select>
+          </div>
+        </div>
+
+        {registrationsError ? (
+          <p className="text-sm text-red-600">{registrationsError}</p>
+        ) : (
+          <>
+            <RegistrationTable
+              registrations={registrations}
+              loading={registrationsLoading}
+              onCancel={handleCancelClick}
+              cancelDisabledReason={cancelDisabledReason}
+            />
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-3 pt-2 text-sm">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="rounded border border-gray-300 px-3 py-1 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="rounded border border-gray-300 px-3 py-1 disabled:opacity-50"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <CancelRegistrationDialog
+        open={cancelTargetId !== null}
+        loading={cancelling}
+        onConfirm={handleConfirmCancel}
+        onClose={handleCloseCancelDialog}
+      />
+      {cancelError && (
+        <p className="text-center text-sm text-red-600">{cancelError}</p>
+      )}
+
     </div>
   );
 }
