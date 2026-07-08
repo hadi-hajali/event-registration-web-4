@@ -1,32 +1,26 @@
-﻿import { useEffect, useState } from "react";
-import MainLayout from "./components/layout/MainLayout";
+import { BrowserRouter, Routes, Route, Link, Navigate } from "react-router-dom";
+import CategoriesPage from "./pages/CategoriesPage";
+import EventsPage from "./pages/EventsPage";
+import DashboardPage from "./pages/DashboardPage";
 import EventDetailsPage from "./pages/EventDetailsPage";
-import { getCurrentPath, navigate, subscribeToLocationChanges } from "./utils/navigation";
-
-function resolveEventId(path: string): number {
-  const match = path.match(/^\/events\/(\d+)$/);
-  return match ? Number(match[1]) : 1;
-}
 
 function App() {
-  const [path, setPath] = useState(getCurrentPath());
-
-  useEffect(() => {
-    return subscribeToLocationChanges(setPath);
-  }, []);
-
-  useEffect(() => {
-    if (path === "/") {
-      navigate("/events/1", { replace: true });
-    }
-  }, [path]);
-
-  const eventId = resolveEventId(path);
-
   return (
-    <MainLayout>
-      <EventDetailsPage key={eventId} eventId={eventId} />
-    </MainLayout>
+    <BrowserRouter>
+      <div className="bg-gray-800 text-white p-4 flex gap-6">
+        <Link to="/dashboard">Dashboard</Link>
+        <Link to="/categories">Categories</Link>
+        <Link to="/events">Events</Link>
+      </div>
+
+      <Routes>
+        <Route path="/" element={<Navigate to="/categories" />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="/events" element={<EventsPage />} />
+        <Route path="/events/:id" element={<EventDetailsPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

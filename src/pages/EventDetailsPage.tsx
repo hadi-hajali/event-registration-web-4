@@ -1,3 +1,4 @@
+
 ﻿import { useEffect, useState } from "react";
 import type { Event } from "../types/event";
 import { getEventById } from "../api/services/events";
@@ -204,7 +205,9 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
           <div>
             <dt className="text-gray-500">Registration Deadline</dt>
             <dd className="font-medium">
-              {formatDate(event.registrationDeadline)}
+              {event.registrationDeadline
+  ? formatDate(event.registrationDeadline)
+  : "-"}
             </dd>
           </div>
           <div>
@@ -308,6 +311,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
       {cancelError && (
         <p className="text-center text-sm text-red-600">{cancelError}</p>
       )}
+
     </div>
   );
 }
