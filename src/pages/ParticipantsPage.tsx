@@ -14,6 +14,7 @@ const emptyForm: ParticipantRequest = {
 
 export function ParticipantsPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
+  const safeParticipants = Array.isArray(participants) ? participants : [];
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(0);
@@ -46,8 +47,9 @@ export function ParticipantsPage() {
             : isActiveFilter === "true",
       });
 
-      setParticipants(result.items);
-      setTotalPages(result.totalPages);
+      const safeParticipants = Array.isArray(result?.items) ? result.items : [];
+      setParticipants(safeParticipants);
+      setTotalPages(result?.totalPages ?? 1);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -337,7 +339,7 @@ export function ParticipantsPage() {
           <div className="py-8 text-center text-gray-600">
             Loading participants...
           </div>
-        ) : participants.length === 0 ? (
+        ) : safeParticipants.length === 0 ? (
           <div className="py-8 text-center text-gray-600">
             No participants found.
           </div>
@@ -356,7 +358,7 @@ export function ParticipantsPage() {
               </thead>
 
               <tbody>
-                {participants.map((participant) => (
+                {safeParticipants.map((participant) => (
                   <tr key={participant.id} className="border-b">
                     <td className="p-3 font-medium">{participant.fullName}</td>
                     <td className="p-3">{participant.email}</td>

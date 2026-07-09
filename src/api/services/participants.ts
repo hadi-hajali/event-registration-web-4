@@ -33,7 +33,7 @@ function buildQuery(params: ParticipantsQuery): string {
 export const participantsService = {
   getAll(params: ParticipantsQuery): Promise<PagedResult<Participant>> {
     return apiClient.get<PagedResult<Participant>>(
-      `/participants${buildQuery(params)}`
+      `/api/participants${buildQuery(params)}`
     );
   },
 
