@@ -1,7 +1,5 @@
-import axios from "axios";
+import { apiClient } from "../client";
 import type { EventListItem } from "../../types/event";
-
-const BASE_URL = "http://localhost:5031/api/events";
 
 export type GetEventsParams = {
   search?: string;
@@ -19,15 +17,15 @@ type EventsResponse = {
   totalPages: number;
 };
 
+
 export const getEvents = async (
-  params: GetEventsParams
+  params?: GetEventsParams
 ): Promise<EventListItem[]> => {
-  const res = await axios.get<EventsResponse>(
-    BASE_URL,
-    {
-      params,
-    }
+
+  const response = await apiClient.get<EventsResponse>(
+    "/events",
+    params
   );
 
-  return res.data.items;
+  return response.items;
 };

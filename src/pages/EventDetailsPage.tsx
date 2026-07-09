@@ -1,5 +1,5 @@
 
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Event } from "../types/event";
 import { getEventById } from "../api/services/events";
 import {

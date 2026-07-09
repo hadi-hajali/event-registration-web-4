@@ -6,29 +6,18 @@ import type {
   GetRegistrationsParams,
 } from "../../types/registration";
 
-// -----------------------------
-// 1. GET EVENT REGISTRATIONS
-// -----------------------------
+// ================= GET EVENT REGISTRATIONS =================
 export const getEventRegistrations = (
   eventId: number,
-  params: GetRegistrationsParams = {}
+  params?: GetRegistrationsParams
 ): Promise<PaginatedResponse<Registration>> => {
-  const query = new URLSearchParams();
-
-  if (params.page !== undefined) query.append("page", String(params.page));
-  if (params.pageSize !== undefined)
-    query.append("pageSize", String(params.pageSize));
-  if (params.search) query.append("search", params.search);
-  if (params.status !== undefined) query.append("status", String(params.status));
-
   return apiClient.get<PaginatedResponse<Registration>>(
-    `/events/${eventId}/registrations?${query.toString()}`
+    `/events/${eventId}/registrations`,
+    params as Record<string, unknown>
   );
 };
 
-// -----------------------------
-// 2. CREATE / REACTIVATE REGISTRATION
-// -----------------------------
+// ================= CREATE REGISTRATION =================
 export const createRegistration = (
   eventId: number,
   data: CreateRegistrationDto
@@ -39,16 +28,20 @@ export const createRegistration = (
   );
 };
 
-// -----------------------------
-// 3. GET REGISTRATION BY ID
-// -----------------------------
-export const getRegistrationById = (id: number): Promise<Registration> => {
-  return apiClient.get<Registration>(`/registrations/${id}`);
+// ================= GET REGISTRATION =================
+export const getRegistrationById = (
+  id: number
+): Promise<Registration> => {
+  return apiClient.get<Registration>(
+    `/registrations/${id}`
+  );
 };
 
-// -----------------------------
-// 4. CANCEL REGISTRATION
-// -----------------------------
-export const cancelRegistration = (id: number): Promise<Registration> => {
-  return apiClient.patch<Registration>(`/registrations/${id}/cancel`);
+// ================= CANCEL REGISTRATION =================
+export const cancelRegistration = (
+  id: number
+): Promise<Registration> => {
+  return apiClient.patch<Registration>(
+    `/registrations/${id}/cancel`
+  );
 };
