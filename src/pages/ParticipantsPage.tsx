@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { participantsService } from "../api/services/participants";
 import { ApiError } from "../types/common";
@@ -31,7 +31,7 @@ export function ParticipantsPage() {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<string[]>([]);
 
-  async function loadParticipants() {
+  const loadParticipants = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -53,11 +53,25 @@ export function ParticipantsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [page, pageSize, search, isActiveFilter]);
 
   useEffect(() => {
-    void loadParticipants();
-  }, [page, search, isActiveFilter]);
+    let active = true;
+
+    const fetchParticipants = async () => {
+      if (!active) {
+        return;
+      }
+
+      await loadParticipants();
+    };
+
+    void fetchParticipants();
+
+    return () => {
+      active = false;
+    };
+  }, [loadParticipants]);
 
   function getErrorMessage(err: unknown): string {
     if (err instanceof ApiError) {

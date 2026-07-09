@@ -8,6 +8,7 @@ export const navigationItems: NavigationItem[] = [
   { label: 'Categories', path: '/categories' },
   { label: 'Events', path: '/events' },
   { label: 'Participants', path: '/participants' },
+  { label: 'Registrations', path: '/registrations' },
 ];
 
 export function navigateTo(path: string): void {
