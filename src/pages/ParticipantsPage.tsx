@@ -112,36 +112,6 @@ const updateParticipant = async () => {
         }),
       }
     );
-const deleteParticipant = async (id: number) => {
-  const confirmed = window.confirm(
-    "Are you sure you want to delete this participant?"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const response = await fetch(
-      `http://localhost:5031/api/participants/${id}`,
-      {
-        method: "DELETE",
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error();
-    }
-
-    setParticipants((prev) =>
-      prev.filter((p) => p.id !== id)
-    );
-
-    setSuccessMessage(
-      "Participant deleted successfully"
-    );
-  } catch {
-    setError("Failed to delete participant");
-  }
-};
     if (!response.ok) {
       throw new Error();
     }

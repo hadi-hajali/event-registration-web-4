@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import type { Event } from "../types/event";
 import { getEventById } from "../api/services/events";
@@ -32,15 +31,11 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
   // Registrations list
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [registrationsLoading, setRegistrationsLoading] = useState(true);
-  const [registrationsError, setRegistrationsError] = useState<string | null>(
-    null
-  );
+  const [registrationsError, setRegistrationsError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "">(
-    ""
-  );
+  const [statusFilter, setStatusFilter] = useState<RegistrationStatus | "">("");
 
   // Register form
   const [registering, setRegistering] = useState(false);
@@ -74,39 +69,28 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
         search: search || undefined,
         status: statusFilter === "" ? undefined : statusFilter,
       });
-      setRegistrations(data.items);
-      setTotalPages(Math.max(data.totalPages, 1));
+      setRegistrations(data?.items || []);
+      setTotalPages(Math.max(data?.totalPages || 1, 1));
     } catch (err) {
       setRegistrationsError(getErrorMessage(err));
+      setRegistrations([]);
     } finally {
       setRegistrationsLoading(false);
     }
   }
 
-  // Load the event once when this component instance mounts.
-  // (A new instance is created per eventId via the `key` prop in App.tsx,
-  // so there's no need to manually reset state here when eventId changes.)
-  //
-  // loadEvent() sets loading/error state before its first `await`. Calling
-  // it directly at the top of the effect body is flagged as a synchronous
-  // setState (same class of issue as the registrations effect below), so we
-  // defer it the same way: via setTimeout, which runs after the current
-  // render/commit has finished.
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       loadEvent();
     }, 0);
     return () => window.clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reload the registrations list when filters/page change (debounced for search).
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       loadRegistrations();
     }, 300);
     return () => window.clearTimeout(timeoutId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, statusFilter]);
 
   async function handleRegister(participantId: number, notes: string) {
@@ -205,18 +189,14 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
           <div>
             <dt className="text-gray-500">Registration Deadline</dt>
             <dd className="font-medium">
-              {event.registrationDeadline
-  ? formatDate(event.registrationDeadline)
-  : "-"}
+              {event.registrationDeadline ? formatDate(event.registrationDeadline) : "-"}
             </dd>
           </div>
           <div>
             <dt className="text-gray-500">Seats</dt>
             <dd className="font-medium">
               {event.activeRegistrationCount} / {event.capacity}{" "}
-              <span className="text-gray-400">
-                ({event.availableSeats} available)
-              </span>
+              <span className="text-gray-400">({event.availableSeats} available)</span>
             </dd>
           </div>
         </dl>
@@ -225,9 +205,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
       {/* Register a participant */}
       <div>
         <RegistrationForm loading={registering} onSubmit={handleRegister} />
-        {registerError && (
-          <p className="mt-2 text-sm text-red-600">{registerError}</p>
-        )}
+        {registerError && <p className="mt-2 text-sm text-red-600">{registerError}</p>}
       </div>
 
       {/* Registrations list */}
@@ -252,9 +230,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
               onChange={(e) => {
                 setPage(1);
                 setStatusFilter(
-                  e.target.value === ""
-                    ? ""
-                    : (Number(e.target.value) as RegistrationStatus)
+                  e.target.value === "" ? "" : (Number(e.target.value) as RegistrationStatus)
                 );
               }}
               className="rounded border border-gray-300 px-3 py-2 text-sm"
@@ -308,10 +284,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
         onConfirm={handleConfirmCancel}
         onClose={handleCloseCancelDialog}
       />
-      {cancelError && (
-        <p className="text-center text-sm text-red-600">{cancelError}</p>
-      )}
-
+      {cancelError && <p className="text-center text-sm text-red-600">{cancelError}</p>}
     </div>
   );
 }

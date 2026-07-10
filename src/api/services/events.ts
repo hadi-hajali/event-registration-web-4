@@ -1,5 +1,6 @@
 import { apiClient } from "../client";
-import type { Event } from "../../types/event";
+import type { Event, EventFormValues, EventListItem } from "../../types/event";
+import type { PaginatedResponse } from "../../types/common";
 
 
 export interface GetEventsParams {
@@ -22,82 +23,16 @@ export interface GetEventsParams {
 
 
 
-export interface PaginatedResult<T> {
-
-  items: T[];
-
-  page: number;
-
-  pageSize: number;
-
-  totalCount: number;
-
-  totalPages: number;
-
-}
-
-
-
-export interface CreateEventRequest {
-
-  categoryId: number;
-
-  name: string;
-
-  description?: string;
-
-  location: string;
-
-  startAt: string;
-
-  endAt: string;
-
-  registrationDeadline: string;
-
-  capacity: number;
-
-  isActive: boolean;
-
-}
-
-
-
-export interface UpdateEventRequest {
-
-  categoryId: number;
-
-  name: string;
-
-  description?: string;
-
-  location: string;
-
-  startAt: string;
-
-  endAt: string;
-
-  registrationDeadline: string;
-
-  capacity: number;
-
-  isActive: boolean;
-
-}
-
-
-
-
-
 // GET ALL
 
 export const getEvents = (
 
   params?: GetEventsParams
 
-): Promise<PaginatedResult<Event>> => {
+): Promise<PaginatedResponse<EventListItem>> => {
 
 
-  return apiClient.get<PaginatedResult<Event>>(
+  return apiClient.get<PaginatedResponse<EventListItem>>(
 
     "/events",
 
@@ -141,7 +76,7 @@ export const getEventById = (
 
 export const createEvent = (
 
-  data:CreateEventRequest
+  data:EventFormValues
 
 ):Promise<Event>=>{
 
@@ -169,22 +104,16 @@ export const updateEvent = (
 
   id:number,
 
-  data:UpdateEventRequest
+  data:EventFormValues
 
-):Promise<void>=>{
+):Promise<Event>=>{
 
 
-  return apiClient.put<void>(
+  return apiClient.put<Event>(
 
     `/events/${id}`,
 
-    {
-
-      id,
-
-      ...data
-
-    }
+    data
 
   );
 
@@ -213,4 +142,14 @@ export const deleteEvent = (
   );
 
 
+};
+
+export const setEventActiveState = (
+  id: number,
+  isActive: boolean
+): Promise<Event> => {
+  return apiClient.patch<Event>(
+    `/events/${id}/active`,
+    { isActive }
+  );
 };

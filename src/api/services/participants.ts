@@ -4,9 +4,7 @@ import type {
   GetParticipantsParams,
 } from "../../types/participant";
 
-// The API currently returns a plain array (no pagination envelope) and only
-// supports filtering by `includeInactive`. `search`/`page`/`pageSize` are
-// applied on the client side below until the backend adds real support for them.
+// Handles both plain arrays or paginated envelopes gracefully to prevent .filter crashes
 export const getParticipants = async (
   params: GetParticipantsParams = {}
 ): Promise<Participant[]> => {
@@ -16,9 +14,16 @@ export const getParticipants = async (
   const includeInactive = params.isActive === false ? true : false;
   query.append("includeInactive", String(includeInactive));
 
-  const all = await apiClient.get<Participant[]>(
+  const response = await apiClient.get<any>(
     `/participants?${query.toString()}`
   );
+
+  // Safeguard: Extract the raw array if it is wrapped inside a paginated structure
+  const all: Participant[] = Array.isArray(response)
+    ? response
+    : response && Array.isArray(response.items)
+    ? response.items
+    : [];
 
   const search = params.search?.trim().toLowerCase();
   const filtered = search

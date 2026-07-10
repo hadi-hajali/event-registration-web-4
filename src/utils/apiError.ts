@@ -17,11 +17,30 @@ function isThrownApiError(err: unknown): err is ThrownApiError {
 
 export function getErrorMessage(err: unknown): string {
   if (isThrownApiError(err)) {
-    if (err.data.errors && err.data.errors.length > 0) {
-      return err.data.errors.join(" ");
+    const data = err.data as ApiErrorShape & {
+      title?: string;
+      errors?: string[] | Record<string, string[]>;
+    };
+
+    if (data.errors) {
+      if (Array.isArray(data.errors) && data.errors.length > 0) {
+        return data.errors.join(" ");
+      }
+
+      if (!Array.isArray(data.errors)) {
+        const messages = Object.values(data.errors).flat();
+        if (messages.length > 0) {
+          return messages.join(" ");
+        }
+      }
     }
-    if (err.data.message) {
-      return err.data.message;
+
+    if (data.message) {
+      return data.message;
+    }
+
+    if (data.title) {
+      return data.title;
     }
   }
 
