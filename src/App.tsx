@@ -12,8 +12,7 @@ import EventsPage from "./pages/EventsPage";
 import DashboardPage from "./pages/DashboardPage";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import ParticipantsPage from "./pages/ParticipantsPage";
-import RegistrationsPage from "./pages/RegistrationsPage";
-
+import RegistrationsPage from "./pages/RegistrationsPage"; // 👈 Make sure this line is present!
 function EventDetailsRoute() {
   const { id } = useParams();
   const eventId = Number(id);
