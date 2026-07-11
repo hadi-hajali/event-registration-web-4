@@ -1,23 +1,54 @@
-import { del, get, post, put } from '../client';
-import type { Category, CreateCategoryRequest, UpdateCategoryRequest } from '../../types/category';
+import { apiClient } from "../client";
+import type { Category } from "../../types/category";
 
-export async function getCategories(includeInactive: boolean): Promise<Category[]> {
-  const query = includeInactive ? '?includeInactive=true' : '?includeInactive=false';
-  return get<Category[]>(`/api/categories${query}`);
-}
 
-export async function getCategoryById(id: number): Promise<Category> {
-  return get<Category>(`/api/categories/${id}`);
-}
+export const getCategories = () => {
+  return apiClient.get<Category[]>("/categories");
+};
 
-export async function createCategory(payload: CreateCategoryRequest): Promise<Category> {
-  return post<Category>('/api/categories', payload);
-}
 
-export async function updateCategory(id: number, payload: UpdateCategoryRequest): Promise<Category> {
-  return put<Category>(`/api/categories/${id}`, payload);
-}
 
-export async function deleteCategory(id: number): Promise<void> {
-  await del(`/api/categories/${id}`);
-}
+export const createCategory = (
+  data: {
+    name: string;
+    description: string;
+  }
+) => {
+  return apiClient.post<Category>(
+    "/categories",
+    data
+  );
+};
+
+
+
+export const updateCategory = (
+  id: number,
+  data: {
+    name: string;
+    description: string;
+    isActive: boolean;
+  }
+) => {
+
+  return apiClient.put<Category>(
+    `/categories/${id}`,
+    {
+      id,
+      ...data
+    }
+  );
+
+};
+
+
+
+export const deleteCategory = (
+  id: number
+) => {
+
+  return apiClient.delete<void>(
+    `/categories/${id}`
+  );
+
+};

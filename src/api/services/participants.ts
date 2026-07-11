@@ -1,55 +1,43 @@
-import { apiClient } from "../client";
-import type { PagedResult } from "../../types/common";
+﻿import { apiClient } from "../client";
 import type {
   Participant,
-  ParticipantRequest,
-  ParticipantsQuery,
+  GetParticipantsParams,
 } from "../../types/participant";
 
-function buildQuery(params: ParticipantsQuery): string {
-  const searchParams = new URLSearchParams();
+// Handles both plain arrays or paginated envelopes gracefully to prevent .filter crashes
+export const getParticipants = async (
+  params: GetParticipantsParams = {}
+): Promise<Participant[]> => {
+  const query = new URLSearchParams();
 
-  if (params.page !== undefined) {
-    searchParams.set("page", String(params.page));
-  }
+  // isActive=true (the common case for pickers) maps to includeInactive=false
+  const includeInactive = params.isActive === false ? true : false;
+  query.append("includeInactive", String(includeInactive));
 
-  if (params.pageSize !== undefined) {
-    searchParams.set("pageSize", String(params.pageSize));
-  }
+  const response = await apiClient.get<any>(
+    `/participants?${query.toString()}`
+  );
 
-  if (params.search !== undefined && params.search.trim() !== "") {
-    searchParams.set("search", params.search.trim());
-  }
+  // Safeguard: Extract the raw array if it is wrapped inside a paginated structure
+  const all: Participant[] = Array.isArray(response)
+    ? response
+    : response && Array.isArray(response.items)
+    ? response.items
+    : [];
 
-  if (params.isActive !== undefined) {
-    searchParams.set("isActive", String(params.isActive));
-  }
+  const search = params.search?.trim().toLowerCase();
+  const filtered = search
+    ? all.filter(
+        (p) =>
+          p.fullName.toLowerCase().includes(search) ||
+          p.email.toLowerCase().includes(search) ||
+          p.phone?.toLowerCase().includes(search)
+      )
+    : all;
 
-  const queryString = searchParams.toString();
+  return filtered;
+};
 
-  return queryString ? `?${queryString}` : "";
-}
-
-export const participantsService = {
-  getAll(params: ParticipantsQuery): Promise<PagedResult<Participant>> {
-    return apiClient.get<PagedResult<Participant>>(
-      `/api/participants${buildQuery(params)}`
-    );
-  },
-
-  getById(id: number): Promise<Participant> {
-    return apiClient.get<Participant>(`/participants/${id}`);
-  },
-
-  create(data: ParticipantRequest): Promise<Participant> {
-    return apiClient.post<Participant>("/participants", data);
-  },
-
-  update(id: number, data: ParticipantRequest): Promise<Participant> {
-    return apiClient.put<Participant>(`/participants/${id}`, data);
-  },
-
-  remove(id: number): Promise<void> {
-    return apiClient.delete(`/participants/${id}`);
-  },
+export const getParticipantById = (id: number): Promise<Participant> => {
+  return apiClient.get<Participant>(`/participants/${id}`);
 };

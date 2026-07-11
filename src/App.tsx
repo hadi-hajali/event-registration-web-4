@@ -1,39 +1,134 @@
-import { useEffect, useState } from 'react';
-import AppLayout from './components/layout/AppLayout';
-import DashboardPage from './pages/DashboardPage';
-import CategoriesPage from './pages/CategoriesPage';
-import EventsPage from './pages/EventsPage';
-import { ParticipantsPage } from './pages/ParticipantsPage';
-import RegistrationsPage from './pages/RegistrationsPage';
+﻿import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Link,
+  Navigate,
+  useParams,
+} from "react-router-dom";
 
-function resolvePage(pathname: string) {
-  switch (pathname) {
-    case '/':
-      return <DashboardPage />;
-    case '/categories':
-      return <CategoriesPage />;
-    case '/events':
-      return <EventsPage />;
-    case '/participants':
-      return <ParticipantsPage />;
-    case '/registrations':
-      return <RegistrationsPage />;
-    default:
-      return <DashboardPage />;
+import CategoriesPage from "./pages/CategoriesPage";
+import EventsPage from "./pages/EventsPage";
+import DashboardPage from "./pages/DashboardPage";
+import EventDetailsPage from "./pages/EventDetailsPage";
+import ParticipantsPage from "./pages/ParticipantsPage";
+import RegistrationsPage from "./pages/RegistrationsPage";
+
+function EventDetailsRoute() {
+  const { id } = useParams();
+  const eventId = Number(id);
+
+  if (!Number.isFinite(eventId)) {
+    return (
+      <div className="p-6 text-red-600">
+        Invalid event id.
+      </div>
+    );
   }
+
+  return <EventDetailsPage key={eventId} eventId={eventId} />;
 }
 
-export default function App() {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+function App() {
 
-  useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
-    };
+  return (
+    <BrowserRouter>
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
+      <div className="bg-gray-800 text-white p-4 flex gap-6">
 
-  return <AppLayout currentPath={currentPath}>{resolvePage(currentPath)}</AppLayout>;
+        <Link to="/dashboard">
+          Dashboard
+        </Link>
+
+
+        <Link to="/categories">
+          Categories
+        </Link>
+
+
+        <Link to="/events">
+          Events
+        </Link>
+
+
+        <Link to="/participants">
+          Participants
+        </Link>
+
+
+        <Link to="/registrations">
+          Registrations
+        </Link>
+
+
+      </div>
+
+
+
+      <Routes>
+
+        <Route
+          path="/"
+          element={
+            <Navigate to="/dashboard" />
+          }
+        />
+
+
+        <Route
+          path="/dashboard"
+          element={
+            <DashboardPage />
+          }
+        />
+
+
+        <Route
+          path="/categories"
+          element={
+            <CategoriesPage />
+          }
+        />
+
+
+        <Route
+          path="/events"
+          element={
+            <EventsPage />
+          }
+        />
+
+
+        <Route
+          path="/participants"
+          element={
+            <ParticipantsPage />
+          }
+        />
+
+
+        <Route
+          path="/registrations"
+          element={
+            <RegistrationsPage />
+          }
+        />
+
+
+        <Route
+          path="/events/:id"
+          element={
+            <EventDetailsRoute />
+          }
+        />
+
+
+      </Routes>
+
+
+    </BrowserRouter>
+  );
 }
+
+
+export default App;

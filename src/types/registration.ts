@@ -1,4 +1,12 @@
-export type Status = 1 | 2; // 1 = Active, 2 = Cancelled
+import type { PaginatedResponse } from "./common";
+
+export const RegistrationStatus = {
+  Active: 1,
+  Cancelled: 2,
+} as const;
+
+export type RegistrationStatus =
+  (typeof RegistrationStatus)[keyof typeof RegistrationStatus];
 
 export interface Registration {
   id: number;
@@ -7,31 +15,25 @@ export interface Registration {
   participantId: number;
   participantName: string;
   participantEmail: string;
-  status: Status;
-  notes?: string;
-  registeredAt: string; // ISO timestamp
-  cancelledAt?: string | null; // ISO timestamp or null
+  participantPhone: string;
+  status: RegistrationStatus;
+  statusName: string;
+  notes: string | null;
+  registeredAt: string;
+  cancelledAt: string | null;
 }
 
-export interface CreateRegistrationRequest {
-  eventId: number;
+// Request body for POST /api/events/{eventId}/registrations (8.1 / F04)
+export interface CreateRegistrationDto {
   participantId: number;
   notes?: string;
 }
 
-export interface RegistrationFilters {
+export interface GetRegistrationsParams {
   page?: number;
   pageSize?: number;
   search?: string;
-  status?: Status | '';
-  eventId?: number | '';
-  participantId?: number | '';
+  status?: RegistrationStatus;
 }
 
-export interface PaginatedRegistrations {
-  items: Registration[];
-  page: number;
-  pageSize: number;
-  totalPages: number;
-  total: number;
-}
+export type RegistrationsPage = PaginatedResponse<Registration>;

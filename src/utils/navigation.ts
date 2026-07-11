@@ -1,17 +1,18 @@
-export type NavigationItem = {
-  label: string;
-  path: string;
-};
+export function getCurrentPath(): string {
+  return window.location.pathname;
+}
 
-export const navigationItems: NavigationItem[] = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Categories', path: '/categories' },
-  { label: 'Events', path: '/events' },
-  { label: 'Participants', path: '/participants' },
-  { label: 'Registrations', path: '/registrations' },
-];
+export function navigate(path: string, options?: { replace?: boolean }): void {
+  if (options?.replace) {
+    window.history.replaceState({}, "", path);
+  } else {
+    window.history.pushState({}, "", path);
+  }
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
 
-export function navigateTo(path: string): void {
-  window.history.pushState({}, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
+export function subscribeToLocationChanges(onChange: (path: string) => void): () => void {
+  const handler = () => onChange(getCurrentPath());
+  window.addEventListener("popstate", handler);
+  return () => window.removeEventListener("popstate", handler);
 }

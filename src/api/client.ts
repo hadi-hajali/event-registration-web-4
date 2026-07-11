@@ -1,71 +1,133 @@
-const DEFAULT_BASE_URL = 'http://localhost:5031';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const baseUrl = (import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, '');
-
-interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-  body?: unknown;
-  headers?: Record<string, string>;
+if (!BASE_URL) {
+  throw new Error(
+    "VITE_API_BASE_URL is missing. Please check your .env file"
+  );
 }
 
-async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    method: options.method ?? 'GET',
+
+async function request<T>(
+  url: string,
+  method: string,
+  body?: unknown,
+  params?: Record<string, unknown>
+): Promise<T> {
+
+  let fullUrl = `${BASE_URL}${url}`;
+
+
+  if (params) {
+    const queryParams = new URLSearchParams();
+
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    });
+
+    const queryString = queryParams.toString();
+
+    if (queryString) {
+      fullUrl += `?${queryString}`;
+    }
+  }
+
+
+  const response = await fetch(fullUrl, {
+    method,
     headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers ?? {}),
+      "Content-Type": "application/json",
     },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body: body ? JSON.stringify(body) : undefined,
   });
 
+
   if (response.status === 204) {
-    return undefined as T;
+    return null as T;
   }
 
-  const data = await response.json();
+
+  const text = await response.text();
+
+  const data = text
+    ? JSON.parse(text)
+    : null;
+
 
   if (!response.ok) {
-    const message = typeof data?.message === 'string' ? data.message : response.statusText || 'Request failed';
-    throw new Error(message);
+
+    throw {
+      status: response.status,
+      data: data ?? {
+        success: false,
+        timestamp: new Date().toISOString(),
+        message: `Request failed with status ${response.status}`,
+        errors: [],
+      },
+    };
+
   }
+
 
   return data as T;
 }
 
-export async function get<T>(path: string): Promise<T> {
-  return request<T>(path, { method: 'GET' });
-}
 
-export async function post<T>(path: string, body: unknown): Promise<T> {
-  return request<T>(path, { method: 'POST', body });
-}
-
-export async function put<T>(path: string, body: unknown): Promise<T> {
-  return request<T>(path, { method: 'PUT', body });
-}
-
-export async function del(path: string): Promise<void> {
-  await request<void>(path, { method: 'DELETE' });
-}
 
 export const apiClient = {
-  get<T>(url: string) {
-    return get<T>(url);
-  },
 
-  post<T>(url: string, body: unknown) {
-    return post<T>(url, body);
-  },
+  get: <T>(
+    url: string,
+    params?: Record<string, unknown>
+  ) =>
+    request<T>(
+      url,
+      "GET",
+      undefined,
+      params
+    ),
 
-  put<T>(url: string, body: unknown) {
-    return put<T>(url, body);
-  },
 
-  patch<T>(url: string, body?: unknown) {
-    return request<T>(url, { method: 'PATCH', body });
-  },
+  post: <T>(
+    url: string,
+    body?: unknown
+  ) =>
+    request<T>(
+      url,
+      "POST",
+      body
+    ),
 
-  delete(url: string) {
-    return del(url);
-  },
+
+  put: <T>(
+    url: string,
+    body?: unknown
+  ) =>
+    request<T>(
+      url,
+      "PUT",
+      body
+    ),
+
+
+  patch: <T>(
+    url: string,
+    body?: unknown
+  ) =>
+    request<T>(
+      url,
+      "PATCH",
+      body
+    ),
+
+
+  delete: <T>(
+    url: string
+  ) =>
+    request<T>(
+      url,
+      "DELETE"
+    ),
+
 };

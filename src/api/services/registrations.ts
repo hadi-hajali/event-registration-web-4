@@ -1,49 +1,72 @@
-import { del, get, post, put } from '../client';
+import { apiClient } from "../client";
+import type { PaginatedResponse } from "../../types/common";
 import type {
-  CreateRegistrationRequest,
   Registration,
-  RegistrationFilters,
-} from '../../types/registration';
+  CreateRegistrationDto,
+  GetRegistrationsParams,
+} from "../../types/registration";
 
-function buildQuery(params: Record<string, string | number | undefined | '' | null>) {
-  const parts: string[] = [];
+// ================= GET EVENT REGISTRATIONS =================
+export const getEventRegistrations = (
+  eventId: number,
+  params?: GetRegistrationsParams
+): Promise<PaginatedResponse<Registration>> => {
+  return apiClient
+    .get<any>("/registrations", {
+      ...(params as Record<string, unknown>),
+      eventId,
+    })
+    .then((response) => {
+      // Safely handle both standard arrays and paginated object envelopes
+      const items = Array.isArray(response) 
+        ? response 
+        : (response && Array.isArray(response.items) ? response.items : []);
+        
+      const totalCount = Array.isArray(response)
+        ? response.length
+        : (response && typeof response.totalCount === 'number' ? response.totalCount : items.length);
 
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === '') {
-      continue;
+      const page = params?.page ?? 1;
+      const pageSize = params?.pageSize ?? 10;
+
+      return {
+        items,
+        page,
+        pageSize,
+        totalCount,
+        totalPages: Math.max(1, Math.ceil(totalCount / pageSize)),
+      };
+    });
+};
+
+// ================= CREATE REGISTRATION =================
+export const createRegistration = (
+  eventId: number,
+  data: CreateRegistrationDto
+): Promise<Registration> => {
+  return apiClient.post<Registration>(
+    "/registrations",
+    {
+      eventId,
+      ...data,
     }
+  );
+};
 
-    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
-  }
+// ================= GET REGISTRATION =================
+export const getRegistrationById = (
+  id: number
+): Promise<Registration> => {
+  return apiClient.get<Registration>(
+    `/registrations/${id}`
+  );
+};
 
-  return parts.length ? `?${parts.join('&')}` : '';
-}
-
-export async function getRegistrations(filters: RegistrationFilters): Promise<Registration[]> {
-  const q = buildQuery({
-    page: filters.page ?? 1,
-    pageSize: filters.pageSize ?? 10,
-    search: filters.search ?? '',
-    status: filters.status ?? '',
-    eventId: filters.eventId ?? '',
-    participantId: filters.participantId ?? '',
-  });
-
-  return get<Registration[]>(`/api/registrations${q}`);
-}
-
-export async function getRegistrationById(id: number): Promise<Registration> {
-  return get<Registration>(`/api/registrations/${id}`);
-}
-
-export async function createRegistration(payload: CreateRegistrationRequest): Promise<Registration> {
-  return post<Registration>('/api/registrations', payload);
-}
-
-export async function cancelRegistration(id: number): Promise<Registration> {
-  return put<Registration>(`/api/registrations/${id}/cancel`, {});
-}
-
-export async function deleteRegistration(id: number): Promise<void> {
-  await del(`/api/registrations/${id}`);
-}
+// ================= CANCEL REGISTRATION =================
+export const cancelRegistration = (
+  id: number
+): Promise<Registration> => {
+  return apiClient.put<Registration>(
+    `/registrations/${id}/cancel`
+  );
+};

@@ -1,8 +1,38 @@
-import type { DashboardSummary } from '../../types/dashboard';
-import { apiClient } from '../client';
+import { apiClient } from "../client";
 
-export const dashboardService = {
-  getSummary(): Promise<DashboardSummary> {
-    return apiClient.get<DashboardSummary>('/dashboard/summary');
-  },
+
+export interface UpcomingEvent {
+  id: number;
+  name: string;
+  categoryName: string;
+  startAt: string;
+  location: string;
+  capacity: number;
+  activeRegistrationCount: number;
+  availableSeats: number;
+}
+
+
+export interface DashboardSummary {
+
+  activeCategories: number;
+
+  activeParticipants: number;
+
+  activeRegistrations: number;
+
+  upcomingEventsCount: number;
+
+  upcomingEvents: UpcomingEvent[];
+
+}
+
+
+
+export const getDashboardSummary = () => {
+
+  return apiClient.get<DashboardSummary>(
+    "/dashboard/summary"
+  );
+
 };
