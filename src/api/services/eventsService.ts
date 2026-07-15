@@ -23,7 +23,7 @@ export const getEvents = async (
 ): Promise<EventListItem[]> => {
 
   const response = await apiClient.get<EventsResponse>(
-    "/events",
+    "/api/events",
     params
   );
 

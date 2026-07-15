@@ -6,6 +6,7 @@ import EventsPage from "./pages/EventsPage";
 import EventDetailsPage from "./pages/EventDetailsPage";
 import RegistrationsPage from "./pages/RegistrationsPage";
 import { ParticipantsPage } from "./pages/ParticipantsPage";
+import AppLayout from "./components/layout/AppLayout";
 
 import {
   getCurrentPath,
@@ -29,6 +30,7 @@ function App() {
 
   const eventId = getEventIdFromPath(currentPath);
 
+  function renderPage() {
   if (eventId !== null) {
     return <EventDetailsPage eventId={eventId} />;
   }
@@ -54,6 +56,13 @@ function App() {
   }
 
   return <DashboardPage />;
+  }
+
+  return (
+    <AppLayout currentPath={currentPath}>
+      {renderPage()}
+    </AppLayout>
+  );
 }
 
 export default App;

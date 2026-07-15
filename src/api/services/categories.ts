@@ -1,21 +1,22 @@
 import { apiClient } from "../client";
 import type { Category } from "../../types/category";
 
+type CategoryRequest = {
+  name: string;
+  description: string;
+};
 
-export const getCategories = () => {
-  return apiClient.get<Category[]>("/categories");
+export const getCategories = (includeInactive = false) => {
+  return apiClient.get<Category[]>("/api/categories", { includeInactive });
 };
 
 
 
 export const createCategory = (
-  data: {
-    name: string;
-    description: string;
-  }
+  data: CategoryRequest
 ) => {
   return apiClient.post<Category>(
-    "/categories",
+    "/api/categories",
     data
   );
 };
@@ -24,15 +25,11 @@ export const createCategory = (
 
 export const updateCategory = (
   id: number,
-  data: {
-    name: string;
-    description: string;
-    isActive: boolean;
-  }
+  data: CategoryRequest & { isActive: boolean }
 ) => {
 
   return apiClient.put<Category>(
-    `/categories/${id}`,
+    `/api/categories/${id}`,
     {
       id,
       ...data
@@ -48,7 +45,7 @@ export const deleteCategory = (
 ) => {
 
   return apiClient.delete<void>(
-    `/categories/${id}`
+    `/api/categories/${id}`
   );
 
 };

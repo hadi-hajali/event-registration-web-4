@@ -64,11 +64,13 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
     setRegistrationsError(null);
     try {
       const data = await getEventRegistrations(eventId, {
+        page,
+        pageSize: PAGE_SIZE,
         search: search || undefined,
         status: statusFilter === "" ? undefined : statusFilter,
       });
-      setTotalPages(Math.max(1, Math.ceil(data.length / PAGE_SIZE)));
-      setRegistrations(data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
+      setTotalPages(Math.max(data.totalPages, 1));
+      setRegistrations(data.items);
     } catch (err) {
       setRegistrationsError(getErrorMessage(err));
       setRegistrations([]);
@@ -124,7 +126,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
     setCancelling(true);
     setCancelError(null);
     try {
-      await cancelRegistration(cancelTargetId);
+      await cancelRegistration(eventId, cancelTargetId);
       setCancelTargetId(null);
       await Promise.all([loadEvent(), loadRegistrations()]);
     } catch (err) {

@@ -1,4 +1,5 @@
 import { apiClient } from "../client";
+import type { PaginatedResponse } from "../../types/common";
 import type {
   CreateRegistrationDto,
   GetRegistrationsParams,
@@ -8,7 +9,6 @@ import type {
 type QueryParams = Record<string, string | number | boolean | undefined>;
 
 function toQueryParams(
-  eventId: number,
   params: GetRegistrationsParams = {}
 ): QueryParams {
   return {
@@ -16,7 +16,6 @@ function toQueryParams(
     pageSize: params.pageSize,
     search: params.search?.trim() || undefined,
     status: params.status,
-    eventId,
   };
 }
 
@@ -24,10 +23,10 @@ function toQueryParams(
 export const getEventRegistrations = (
   eventId: number,
   params?: GetRegistrationsParams
-): Promise<Registration[]> => {
-  return apiClient.get<Registration[]>(
-    "/api/registrations",
-    toQueryParams(eventId, params)
+): Promise<PaginatedResponse<Registration>> => {
+  return apiClient.get<PaginatedResponse<Registration>>(
+    `/api/events/${eventId}/registrations`,
+    toQueryParams(params)
   );
 };
 
@@ -37,28 +36,27 @@ export const createRegistration = (
   data: CreateRegistrationDto
 ): Promise<Registration> => {
   return apiClient.post<Registration>(
-    "/api/registrations",
-    {
-      eventId,
-      ...data,
-    }
+    `/api/events/${eventId}/registrations`,
+    data
   );
 };
 
 // ================= GET REGISTRATION =================
 export const getRegistrationById = (
+  eventId: number,
   id: number
 ): Promise<Registration> => {
   return apiClient.get<Registration>(
-    `/api/registrations/${id}`
+    `/api/events/${eventId}/registrations/${id}`
   );
 };
 
 // ================= CANCEL REGISTRATION =================
 export const cancelRegistration = (
+  eventId: number,
   id: number
 ): Promise<Registration> => {
-  return apiClient.put<Registration>(
-    `/api/registrations/${id}/cancel`
+  return apiClient.patch<Registration>(
+    `/api/events/${eventId}/registrations/${id}/cancel`
   );
 };

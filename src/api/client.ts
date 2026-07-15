@@ -14,7 +14,7 @@ async function request<T>(
   params?: Record<string, unknown>
 ): Promise<T> {
 
-  let fullUrl = `${BASE_URL}${url}`;
+  let fullUrl = joinUrl(BASE_URL, url);
 
 
   if (params) {
@@ -131,3 +131,14 @@ export const apiClient = {
     ),
 
 };
+
+function joinUrl(baseUrl: string, path: string): string {
+  const cleanBase = baseUrl.replace(/\/+$/, "");
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (cleanBase.endsWith("/api") && cleanPath.startsWith("/api/")) {
+    cleanPath = cleanPath.slice(4);
+  }
+
+  return `${cleanBase}${cleanPath}`;
+}

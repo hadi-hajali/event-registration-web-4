@@ -1,38 +1,23 @@
 import { apiClient } from "../client";
 
-
 export interface UpcomingEvent {
   id: number;
-  name: string;
+  title: string;
   categoryName: string;
-  startAt: string;
+  startDate: string;
   location: string;
   capacity: number;
-  activeRegistrationCount: number;
-  availableSeats: number;
+  registeredCount: number;
 }
-
 
 export interface DashboardSummary {
-
-  activeCategories: number;
-
-  activeParticipants: number;
-
-  activeRegistrations: number;
-
-  upcomingEventsCount: number;
-
+  totalActiveCategories: number;
+  totalActiveEvents: number;
+  totalActiveParticipants: number;
+  totalActiveRegistrations: number;
   upcomingEvents: UpcomingEvent[];
-
 }
 
-
-
 export const getDashboardSummary = () => {
-
-  return apiClient.get<DashboardSummary>(
-    "/dashboard/summary"
-  );
-
+  return apiClient.get<DashboardSummary>("/api/dashboard/summary");
 };
