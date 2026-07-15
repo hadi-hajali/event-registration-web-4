@@ -11,6 +11,14 @@ export interface Participant {
   updatedAt: string | null;
 }
 
+export interface ParticipantRequest {
+  fullName: string;
+  email: string;
+  phone: string;
+  dateOfBirth?: string | null;
+  isActive?: boolean;
+}
+
 // Query params for GET /api/participants (F03 - 8.4 Pagination Shape)
 export interface GetParticipantsParams {
   page?: number;
@@ -19,4 +27,6 @@ export interface GetParticipantsParams {
   isActive?: boolean;
 }
 
-export type ParticipantsPage = PaginatedResponse<Participant>;
+export type PaginatedParticipantsResponse = PaginatedResponse<Participant>;
+
+export type ParticipantsPage = PaginatedParticipantsResponse;

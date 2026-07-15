@@ -1,6 +1,18 @@
 import { apiClient } from "../client";
 import type { Event, EventFormValues, EventListItem } from "../../types/event";
-import type { PaginatedResponse } from "../../types/common";
+import type { PagedResult } from "../../types/common";
+
+function buildQuery(params?: Record<string, unknown>): string {
+  if (!params) return '';
+  const parts: string[] = [];
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue;
+    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  }
+
+  return parts.length ? `?${parts.join('&')}` : '';
+}
 
 
 export interface GetEventsParams {
@@ -25,22 +37,12 @@ export interface GetEventsParams {
 
 // GET ALL
 
+
 export const getEvents = (
-
   params?: GetEventsParams
-
-): Promise<PaginatedResponse<EventListItem>> => {
-
-
-  return apiClient.get<PaginatedResponse<EventListItem>>(
-
-    "/events",
-
-    params as Record<string, unknown>
-
-  );
-
-
+): Promise<PagedResult<EventListItem>> => {
+  const q = buildQuery(params as Record<string, unknown> | undefined);
+  return apiClient.get<PagedResult<EventListItem>>(`/api/events${q}`);
 };
 
 
@@ -59,7 +61,7 @@ export const getEventById = (
 
   return apiClient.get<Event>(
 
-    `/events/${id}`
+    `/api/events/${id}`
 
   );
 
@@ -83,7 +85,7 @@ export const createEvent = (
 
   return apiClient.post<Event>(
 
-    "/events",
+    "/api/events",
 
     data
 
@@ -111,7 +113,7 @@ export const updateEvent = (
 
   return apiClient.put<Event>(
 
-    `/events/${id}`,
+    `/api/events/${id}`,
 
     data
 
@@ -137,7 +139,7 @@ export const deleteEvent = (
 
   return apiClient.delete<void>(
 
-    `/events/${id}`
+    `/api/events/${id}`
 
   );
 
@@ -149,7 +151,7 @@ export const setEventActiveState = (
   isActive: boolean
 ): Promise<Event> => {
   return apiClient.patch<Event>(
-    `/events/${id}/active`,
+    `/api/events/${id}/active`,
     { isActive }
   );
 };

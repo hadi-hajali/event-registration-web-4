@@ -1,43 +1,48 @@
-﻿import { apiClient } from "../client";
+import { apiClient } from "../client";
 import type {
-  Participant,
   GetParticipantsParams,
+  PaginatedParticipantsResponse,
+  Participant,
+  ParticipantRequest,
 } from "../../types/participant";
 
-// Handles both plain arrays or paginated envelopes gracefully to prevent .filter crashes
-export const getParticipants = async (
+type QueryParams = Record<string, string | number | boolean | undefined>;
+
+function toQueryParams(params: GetParticipantsParams): QueryParams {
+  return {
+    page: params.page,
+    pageSize: params.pageSize,
+    search: params.search?.trim() || undefined,
+    isActive: params.isActive,
+  };
+}
+
+export const getParticipants = (
   params: GetParticipantsParams = {}
-): Promise<Participant[]> => {
-  const query = new URLSearchParams();
-
-  // isActive=true (the common case for pickers) maps to includeInactive=false
-  const includeInactive = params.isActive === false ? true : false;
-  query.append("includeInactive", String(includeInactive));
-
-  const response = await apiClient.get<any>(
-    `/participants?${query.toString()}`
+): Promise<PaginatedParticipantsResponse> => {
+  return apiClient.get<PaginatedParticipantsResponse>(
+    "/api/participants",
+    toQueryParams(params)
   );
-
-  // Safeguard: Extract the raw array if it is wrapped inside a paginated structure
-  const all: Participant[] = Array.isArray(response)
-    ? response
-    : response && Array.isArray(response.items)
-    ? response.items
-    : [];
-
-  const search = params.search?.trim().toLowerCase();
-  const filtered = search
-    ? all.filter(
-        (p) =>
-          p.fullName.toLowerCase().includes(search) ||
-          p.email.toLowerCase().includes(search) ||
-          p.phone?.toLowerCase().includes(search)
-      )
-    : all;
-
-  return filtered;
 };
 
 export const getParticipantById = (id: number): Promise<Participant> => {
-  return apiClient.get<Participant>(`/participants/${id}`);
+  return apiClient.get<Participant>(`/api/participants/${id}`);
+};
+
+export const createParticipant = (
+  data: ParticipantRequest
+): Promise<Participant> => {
+  return apiClient.post<Participant>("/api/participants", data);
+};
+
+export const updateParticipant = (
+  id: number,
+  data: ParticipantRequest
+): Promise<Participant> => {
+  return apiClient.put<Participant>(`/api/participants/${id}`, data);
+};
+
+export const deleteParticipant = (id: number): Promise<void> => {
+  return apiClient.delete<void>(`/api/participants/${id}`);
 };

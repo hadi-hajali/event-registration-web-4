@@ -42,7 +42,7 @@ export default function ParticipantSearchSelect({
           search: query || undefined,
           isActive: true,
         });
-        setResults(data.slice(0, 10));
+        setResults(data.items.slice(0, 10));
       } catch (err) {
         setError(getErrorMessage(err));
       } finally {

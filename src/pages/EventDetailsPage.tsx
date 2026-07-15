@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Event } from "../types/event";
 import { getEventById } from "../api/services/events";
 import {
@@ -46,7 +46,7 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
 
-  async function loadEvent() {
+  const loadEvent = useCallback(async () => {
     setEventLoading(true);
     setEventError(null);
     try {
@@ -57,41 +57,39 @@ export default function EventDetailsPage({ eventId }: EventDetailsPageProps) {
     } finally {
       setEventLoading(false);
     }
-  }
+  }, [eventId]);
 
-  async function loadRegistrations() {
+  const loadRegistrations = useCallback(async () => {
     setRegistrationsLoading(true);
     setRegistrationsError(null);
     try {
       const data = await getEventRegistrations(eventId, {
-        page,
-        pageSize: PAGE_SIZE,
         search: search || undefined,
         status: statusFilter === "" ? undefined : statusFilter,
       });
-      setRegistrations(data?.items || []);
-      setTotalPages(Math.max(data?.totalPages || 1, 1));
+      setTotalPages(Math.max(1, Math.ceil(data.length / PAGE_SIZE)));
+      setRegistrations(data.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
     } catch (err) {
       setRegistrationsError(getErrorMessage(err));
       setRegistrations([]);
     } finally {
       setRegistrationsLoading(false);
     }
-  }
+  }, [eventId, page, search, statusFilter]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       loadEvent();
     }, 0);
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [loadEvent]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       loadRegistrations();
     }, 300);
     return () => window.clearTimeout(timeoutId);
-  }, [page, search, statusFilter]);
+  }, [loadRegistrations]);
 
   async function handleRegister(participantId: number, notes: string) {
     setRegistering(true);

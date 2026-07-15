@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
 import { getCategories } from "../api/services/categories";
 import {
   createEvent,
@@ -9,6 +8,7 @@ import {
   setEventActiveState,
   updateEvent,
 } from "../api/services/events";
+import { navigateTo } from "../utils/navigation";
 import type { Category } from "../types/category";
 import type { Event, EventFormValues, EventListItem } from "../types/event";
 import { getErrorMessage } from "../utils/apiError";
@@ -100,16 +100,7 @@ export default function EventsPage() {
   );
 
   const loadCategories = useCallback(async () => {
-    const data = await getCategories();
-    setCategories(data);
-    setForm((current) => {
-      if (current.categoryId !== 0 || data.length === 0) return current;
-      const firstActive = data.find((category) => category.isActive);
-      return {
-        ...current,
-        categoryId: firstActive?.id ?? data[0].id,
-      };
-    });
+    return getCategories();
   }, []);
 
   const loadEvents = useCallback(async () => {
@@ -129,7 +120,7 @@ export default function EventsPage() {
       });
 
       setEvents(response.items);
-      setTotalCount(response.totalCount);
+     setTotalCount(response.totalItems);
       setTotalPages(Math.max(response.totalPages, 1));
     } catch (err) {
       setError(getErrorMessage(err));
@@ -147,7 +138,34 @@ export default function EventsPage() {
   ]);
 
   useEffect(() => {
-    loadCategories().catch((err) => setError(getErrorMessage(err)));
+    let cancelled = false;
+
+    async function run() {
+      try {
+        const data = await loadCategories();
+        if (cancelled) return;
+
+        setCategories(data);
+        setForm((current) => {
+          if (current.categoryId !== 0 || data.length === 0) return current;
+          const firstActive = data.find((category) => category.isActive);
+          return {
+            ...current,
+            categoryId: firstActive?.id ?? data[0].id,
+          };
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setError(getErrorMessage(err));
+        }
+      }
+    }
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadCategories]);
 
   useEffect(() => {
@@ -580,12 +598,13 @@ export default function EventsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Link
-                          to={`/events/${event.id}`}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo(`/events/${event.id}`)}
                           className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700"
                         >
                           Details
-                        </Link>
+                        </button>
                         <button
                           type="button"
                           onClick={() => startEdit(event)}

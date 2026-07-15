@@ -1,133 +1,59 @@
-﻿import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Link,
-  Navigate,
-  useParams,
-} from "react-router-dom";
+﻿import { useEffect, useState } from "react";
 
 import CategoriesPage from "./pages/CategoriesPage";
-import EventsPage from "./pages/EventsPage";
 import DashboardPage from "./pages/DashboardPage";
+import EventsPage from "./pages/EventsPage";
 import EventDetailsPage from "./pages/EventDetailsPage";
-import ParticipantsPage from "./pages/ParticipantsPage";
-import RegistrationsPage from "./pages/RegistrationsPage"; // 👈 Make sure this line is present!
-function EventDetailsRoute() {
-  const { id } = useParams();
-  const eventId = Number(id);
+import RegistrationsPage from "./pages/RegistrationsPage";
+import { ParticipantsPage } from "./pages/ParticipantsPage";
 
-  if (!Number.isFinite(eventId)) {
-    return (
-      <div className="p-6 text-red-600">
-        Invalid event id.
-      </div>
-    );
-  }
+import {
+  getCurrentPath,
+  subscribeToLocationChanges,
+} from "./utils/navigation";
 
-  return <EventDetailsPage key={eventId} eventId={eventId} />;
+function getEventIdFromPath(path: string): number | null {
+  const match = path.match(/^\/events\/(\d+)$/);
+  if (!match) return null;
+
+  const eventId = Number(match[1]);
+  return Number.isFinite(eventId) ? eventId : null;
 }
 
 function App() {
+  const [currentPath, setCurrentPath] = useState(getCurrentPath());
 
-  return (
-    <BrowserRouter>
+  useEffect(() => {
+    return subscribeToLocationChanges(setCurrentPath);
+  }, []);
 
-      <div className="bg-gray-800 text-white p-4 flex gap-6">
+  const eventId = getEventIdFromPath(currentPath);
 
-        <Link to="/dashboard">
-          Dashboard
-        </Link>
+  if (eventId !== null) {
+    return <EventDetailsPage eventId={eventId} />;
+  }
 
+  if (currentPath === "/" || currentPath === "/dashboard") {
+    return <DashboardPage />;
+  }
 
-        <Link to="/categories">
-          Categories
-        </Link>
+  if (currentPath === "/categories") {
+    return <CategoriesPage />;
+  }
 
+  if (currentPath === "/events") {
+    return <EventsPage />;
+  }
 
-        <Link to="/events">
-          Events
-        </Link>
+  if (currentPath === "/participants") {
+    return <ParticipantsPage />;
+  }
 
+  if (currentPath === "/registrations") {
+    return <RegistrationsPage />;
+  }
 
-        <Link to="/participants">
-          Participants
-        </Link>
-
-
-        <Link to="/registrations">
-          Registrations
-        </Link>
-
-
-      </div>
-
-
-
-      <Routes>
-
-        <Route
-          path="/"
-          element={
-            <Navigate to="/dashboard" />
-          }
-        />
-
-
-        <Route
-          path="/dashboard"
-          element={
-            <DashboardPage />
-          }
-        />
-
-
-        <Route
-          path="/categories"
-          element={
-            <CategoriesPage />
-          }
-        />
-
-
-        <Route
-          path="/events"
-          element={
-            <EventsPage />
-          }
-        />
-
-
-        <Route
-          path="/participants"
-          element={
-            <ParticipantsPage />
-          }
-        />
-
-
-        <Route
-          path="/registrations"
-          element={
-            <RegistrationsPage />
-          }
-        />
-
-
-        <Route
-          path="/events/:id"
-          element={
-            <EventDetailsRoute />
-          }
-        />
-
-
-      </Routes>
-
-
-    </BrowserRouter>
-  );
+  return <DashboardPage />;
 }
-
 
 export default App;

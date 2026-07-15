@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
-import type React from "react";
+import { createEvent } from "../api/services/events";
+import { navigateTo } from "../utils/navigation";
 
 type EventForm = {
   categoryId: number;
@@ -52,14 +52,19 @@ export default function CreateEventPage() {
     setMessage("");
 
     try {
-      await axios.post("http://localhost:5031/api/events", form);
+      await createEvent({
+        ...form,
+        name: form.name.trim(),
+        description: form.description?.trim() || undefined,
+        startAt: new Date(form.startAt).toISOString(),
+        endAt: new Date(form.endAt).toISOString(),
+        registrationDeadline: new Date(form.registrationDeadline).toISOString(),
+      });
       setMessage("Event created successfully ✅");
+      navigateTo('/events');
     } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setMessage(err.response?.data?.message || "Error ❌");
-      } else {
-        setMessage("Unknown error ❌");
-      }
+      const message = err instanceof Error ? err.message : 'Unknown error ❌';
+      setMessage(message);
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
-import { useParams, useNavigate } from "react-router-dom";
+import { getEventById, updateEvent } from "../api/services/events";
+import { navigateTo } from "../utils/navigation";
 
 type EventForm = {
   categoryId: number;
@@ -14,9 +14,7 @@ type EventForm = {
   isActive: boolean;
 };
 
-export default function EditEventPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+export default function EditEventPage({ eventId }: { eventId: number }) {
 
   const [form, setForm] = useState<EventForm>({
     categoryId: 0,
@@ -34,21 +32,35 @@ export default function EditEventPage() {
   const [error, setError] = useState("");
 
   // ================= FETCH EVENT =================
+  function toInputDateTime(value?: string | null) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 16);
+  }
+
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5031/api/events/${id}`
-        );
-
-        setForm(res.data);
+        const res = await getEventById(eventId);
+        setForm({
+          categoryId: res.categoryId,
+          name: res.name,
+          description: res.description ?? "",
+          location: res.location,
+          startAt: toInputDateTime(res.startAt),
+          endAt: toInputDateTime(res.endAt),
+          registrationDeadline: toInputDateTime(res.registrationDeadline ?? null),
+          capacity: res.capacity,
+          isActive: res.isActive,
+        });
       } catch {
         setError("Failed to load event");
       }
     };
 
     fetchEvent();
-  }, [id]);
+  }, [eventId]);
 
   // ================= HANDLE CHANGE =================
   const handleChange = (
@@ -72,12 +84,8 @@ export default function EditEventPage() {
     setError("");
 
     try {
-      await axios.put(
-        `http://localhost:5031/api/events/${id}`,
-        form
-      );
-
-      navigate("/events");
+      await updateEvent(eventId, form);
+      navigateTo('/events');
     } catch {
       setError("Failed to update event");
     } finally {
